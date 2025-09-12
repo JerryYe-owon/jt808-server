@@ -18,6 +18,11 @@ mybatis-plus:
   mapper-locations:
     - classpath:/mapper/*.xml
 
+springdoc:
+  swagger-ui:
+    defaultModelsExpandDepth: -1
+    default-model-expand-depth: 1
+
 server:
   port: 8100
 
