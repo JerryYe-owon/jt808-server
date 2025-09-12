@@ -8,7 +8,9 @@ import org.yzh.protocol.basics.JTMessage;
 import org.yzh.protocol.commons.JT808;
 import org.yzh.protocol.t808.T0001;
 import org.yzh.protocol.t808.T0200;
+import org.yzh.web.config.RabbitMQConfig;
 import org.yzh.web.model.dto.GPSMessage;
+import org.yzh.web.model.dto.RegistryMessage;
 import org.yzh.web.model.entity.DeviceDO;
 import org.yzh.web.model.enums.SessionKey;
 import org.yzh.web.model.vo.T0200Ext;
@@ -77,15 +79,19 @@ public class JTHandlerInterceptor implements HandlerInterceptor<JTMessage> {
     /** 调用之前 */
     @Override
     public boolean beforeHandle(JTMessage request, Session session) {
-        int messageId = request.getMessageId();
-        if (messageId == JT808.终端注册 || messageId == JT808.终端鉴权)
-            return true;
         if (!session.isRegistered()) {
             log.warn("{}未注册的设备<<<<-{}", session, request);
 //            return false;//忽略该消息
         }
 
-        DeviceDO device = session.getAttribute(SessionKey.Device);
+        int messageId = request.getMessageId();
+
+        if (messageId == JT808.终端注册 || messageId == JT808.终端鉴权)
+        {
+            return true;
+        }
+
+//        DeviceDO device = session.getAttribute(SessionKey.Device);
         if (messageId == JT808.位置信息汇报) {
             T0200 t0200 = (T0200) request;
             if (t0200.getDeviceTime() == null) {
@@ -93,13 +99,6 @@ public class JTHandlerInterceptor implements HandlerInterceptor<JTMessage> {
             }
             request.setExtData(new T0200Ext(t0200));
 
-            GPSMessage gpsMessage =  GPSMessage.builder()
-                    .longitude(device.getLocation().getLng())
-                    .latitude(device.getLocation().getLat())
-                    .deviceTime(device.getLocation().getDeviceTime())
-                    .simCardNo(device.getMobileNo()) // clientId(sim card no) -> to terminal id
-                    .build();
-            messageProducer.sendMessage(device.getMobileNo(), "gps", gpsMessage);
             return true;
         }
         return true;
@@ -114,6 +113,41 @@ public class JTHandlerInterceptor implements HandlerInterceptor<JTMessage> {
 
             if (response.getMessageId() == 0) {
                 response.setMessageId(response.reflectMessageId());
+            }
+
+            int messageId = request.getMessageId();
+
+            if (messageId == JT808.终端注册)
+            {
+                DeviceDO device = session.getAttribute(SessionKey.Device);
+                RegistryMessage registryMessage = RegistryMessage.builder()
+                        .version(device.getProtocolVersion())
+                        .simNumber(device.getMobileNo())
+                        .deviceId(device.getDeviceId())
+                        .build();
+
+                messageProducer.sendRegistryEvent(session.getClientId(),"device.register", registryMessage);
+            }
+            else if (messageId == JT808.终端鉴权)
+            {
+
+            }
+
+            else if (messageId == JT808.终端心跳)
+            {
+                
+            }
+
+            else if (messageId == JT808.位置信息汇报)
+            {
+                DeviceDO device = session.getAttribute(SessionKey.Device);
+                GPSMessage gpsMessage = GPSMessage.builder()
+                        .longitude(device.getLocation().getLng())
+                        .latitude(device.getLocation().getLat())
+                        .deviceTime(device.getLocation().getDeviceTime())
+                        .simCardNo(device.getMobileNo()) // clientId(sim card no) -> to terminal id
+                        .build();
+                messageProducer.sendMessage(RabbitMQConfig.CONTROL_EXCHANGE, device.getMobileNo(), "gps", gpsMessage);
             }
         }
 //        log.info("{}\n<<<<-{}\n>>>>-{}", session, request, response);

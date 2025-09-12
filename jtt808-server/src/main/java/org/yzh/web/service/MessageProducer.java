@@ -16,19 +16,29 @@ public class MessageProducer
     }
 
     /**
-     * Send a message of a specific vehicle and message type.
+     * Send a control or media message for a specific vehicle.
      *
+     * @param exchange    which exchange to publish (CONTROL_EXCHANGE or MEDIA_EXCHANGE)
      * @param vehicleId   vehicle identifier (e.g., "vehicle123")
      * @param messageType message type (e.g., "gps", "media.start", "media.stop")
-     * @param payload     the actual message body (JSON)
+     * @param payload     the actual message body (JSON or object)
      */
-    public void sendMessage(String vehicleId, String messageType, Object payload)
+    public void sendMessage(String exchange, String vehicleId, String messageType, Object payload)
     {
-        String routingKey = vehicleId + "." + messageType; // e.g. vehicle123.media.start
-        rabbitTemplate.convertAndSend(
-                RabbitMQConfig.CONTROL_EXCHANGE,
-                routingKey,
-                payload
-        );
+        String routingKey = vehicleId + "." + messageType; // e.g., vehicle123.gps
+        rabbitTemplate.convertAndSend(exchange, routingKey, payload);
+    }
+
+    /**
+     * Send a device registry event.
+     *
+     * @param deviceId  device identifier (e.g., "DEV12345")
+     * @param eventType registry event type (e.g., "device.register", "device.heartbeat", "device.disconnect")
+     * @param payload   the actual message body (JSON or object)
+     */
+    public void sendRegistryEvent(String deviceId, String eventType, Object payload)
+    {
+        String routingKey = deviceId + "." + eventType; // e.g., DEV12345.device.register
+        rabbitTemplate.convertAndSend(RabbitMQConfig.REGISTRY_EXCHANGE, routingKey, payload);
     }
 }

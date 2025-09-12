@@ -11,6 +11,7 @@ import java.util.Objects;
 @Accessors(chain = true)
 public class DeviceDO {
 
+    private String deviceModel;
     @Schema(description = "设备id")
     private String deviceId;
     @Schema(description = "设备手机号")

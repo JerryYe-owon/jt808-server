@@ -59,6 +59,7 @@ public class JT808Endpoint {
         session.register(message);
         DeviceDO device = new DeviceDO();
         device.setProtocolVersion(message.getProtocolVersion());
+        device.setDeviceModel(message.getDeviceModel());
         device.setMobileNo(message.getClientId());
         device.setDeviceId(message.getDeviceId());
         device.setPlateNo(message.getPlateNo());
