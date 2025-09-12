@@ -8,13 +8,22 @@ import org.yzh.protocol.basics.JTMessage;
 import org.yzh.protocol.commons.JT808;
 import org.yzh.protocol.t808.T0001;
 import org.yzh.protocol.t808.T0200;
+import org.yzh.web.model.dto.GPSMessage;
 import org.yzh.web.model.entity.DeviceDO;
 import org.yzh.web.model.enums.SessionKey;
 import org.yzh.web.model.vo.T0200Ext;
+import org.yzh.web.service.MessageProducer;
 
 @Slf4j
 @Component
 public class JTHandlerInterceptor implements HandlerInterceptor<JTMessage> {
+
+    private final MessageProducer messageProducer;
+
+    public JTHandlerInterceptor(MessageProducer messageProducer)
+    {
+        this.messageProducer = messageProducer;
+    }
 
     /** 未找到对应的Handle */
     @Override
@@ -83,6 +92,14 @@ public class JTHandlerInterceptor implements HandlerInterceptor<JTMessage> {
                 return false;//忽略没有时间的消息
             }
             request.setExtData(new T0200Ext(t0200));
+
+            GPSMessage gpsMessage =  GPSMessage.builder()
+                    .longitude(device.getLocation().getLng())
+                    .latitude(device.getLocation().getLat())
+                    .deviceTime(device.getLocation().getDeviceTime())
+                    .simCardNo(device.getMobileNo()) // clientId(sim card no) -> to terminal id
+                    .build();
+            messageProducer.sendMessage(device.getMobileNo(), "gps", gpsMessage);
             return true;
         }
         return true;
