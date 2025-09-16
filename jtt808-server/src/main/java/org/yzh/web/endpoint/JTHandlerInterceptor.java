@@ -99,6 +99,15 @@ public class JTHandlerInterceptor implements HandlerInterceptor<JTMessage> {
             }
             request.setExtData(new T0200Ext(t0200));
 
+            DeviceDO device = session.getAttribute(SessionKey.Device);
+            GPSMessage gpsMessage = GPSMessage.builder()
+                    .longitude(device.getLocation().getLng())
+                    .latitude(device.getLocation().getLat())
+                    .deviceTime(device.getLocation().getDeviceTime())
+                    .simCardNo(device.getMobileNo()) // clientId(sim card no) -> to terminal id
+                    .build();
+            messageProducer.sendMessage(RabbitMQConfig.CONTROL_EXCHANGE, device.getMobileNo(), "gps", gpsMessage);
+
             return true;
         }
         return true;
@@ -136,18 +145,6 @@ public class JTHandlerInterceptor implements HandlerInterceptor<JTMessage> {
             else if (messageId == JT808.终端心跳)
             {
                 
-            }
-
-            else if (messageId == JT808.位置信息汇报)
-            {
-                DeviceDO device = session.getAttribute(SessionKey.Device);
-                GPSMessage gpsMessage = GPSMessage.builder()
-                        .longitude(device.getLocation().getLng())
-                        .latitude(device.getLocation().getLat())
-                        .deviceTime(device.getLocation().getDeviceTime())
-                        .simCardNo(device.getMobileNo()) // clientId(sim card no) -> to terminal id
-                        .build();
-                messageProducer.sendMessage(RabbitMQConfig.CONTROL_EXCHANGE, device.getMobileNo(), "gps", gpsMessage);
             }
         }
 //        log.info("{}\n<<<<-{}\n>>>>-{}", session, request, response);
