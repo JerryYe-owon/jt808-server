@@ -11,8 +11,9 @@ import lombok.NoArgsConstructor;
 @Data
 public class RegistryMessage
 {
-    public Integer version;
-    public String deviceId;
-    public String simNumber;
-    public String event;
+    private Integer protocolVersion;
+    private String deviceModel;
+    private String deviceId;
+    private String simNumber;
+    private String plateNo;
 }

@@ -7,8 +7,10 @@ import org.springframework.stereotype.Component;
 import org.yzh.protocol.basics.JTMessage;
 import org.yzh.protocol.commons.JT808;
 import org.yzh.protocol.t808.T0001;
+import org.yzh.protocol.t808.T0102;
 import org.yzh.protocol.t808.T0200;
 import org.yzh.web.config.RabbitMQConfig;
+import org.yzh.web.model.dto.AuthMessage;
 import org.yzh.web.model.dto.GPSMessage;
 import org.yzh.web.model.dto.RegistryMessage;
 import org.yzh.web.model.entity.DeviceDO;
@@ -91,8 +93,8 @@ public class JTHandlerInterceptor implements HandlerInterceptor<JTMessage> {
             return true;
         }
 
-//        DeviceDO device = session.getAttribute(SessionKey.Device);
-        if (messageId == JT808.位置信息汇报) {
+        if (messageId == JT808.位置信息汇报)
+        {
             T0200 t0200 = (T0200) request;
             if (t0200.getDeviceTime() == null) {
                 return false;//忽略没有时间的消息
@@ -100,13 +102,15 @@ public class JTHandlerInterceptor implements HandlerInterceptor<JTMessage> {
             request.setExtData(new T0200Ext(t0200));
 
             DeviceDO device = session.getAttribute(SessionKey.Device);
+            String mobileNo12 = buildMobileNo12(device.getMobileNo());
+
             GPSMessage gpsMessage = GPSMessage.builder()
                     .longitude(device.getLocation().getLng())
                     .latitude(device.getLocation().getLat())
                     .deviceTime(device.getLocation().getDeviceTime())
-                    .simCardNo(device.getMobileNo()) // clientId(sim card no) -> to terminal id
+                    .simNumber(mobileNo12)
                     .build();
-            messageProducer.sendMessage(RabbitMQConfig.CONTROL_EXCHANGE, device.getMobileNo(), "gps", gpsMessage);
+            messageProducer.sendMessage(RabbitMQConfig.CONTROL_EXCHANGE, mobileNo12, "gps", gpsMessage);
 
             return true;
         }
@@ -125,28 +129,63 @@ public class JTHandlerInterceptor implements HandlerInterceptor<JTMessage> {
             }
 
             int messageId = request.getMessageId();
+            DeviceDO device = session.getAttribute(SessionKey.Device);
+
+            String mobileNo12 = buildMobileNo12(device.getMobileNo());
 
             if (messageId == JT808.终端注册)
             {
-                DeviceDO device = session.getAttribute(SessionKey.Device);
                 RegistryMessage registryMessage = RegistryMessage.builder()
-                        .version(device.getProtocolVersion())
-                        .simNumber(device.getMobileNo())
+                        .protocolVersion(device.getProtocolVersion())
+                        .simNumber(mobileNo12)
+                        .plateNo(device.getPlateNo())
+                        .deviceModel(device.getDeviceModel())
                         .deviceId(device.getDeviceId())
                         .build();
 
-                messageProducer.sendRegistryEvent(session.getClientId(),"device.register", registryMessage);
+                messageProducer.sendRegistryEvent(RabbitMQConfig.DEVICE_REGISTER_EVENT, registryMessage);
             }
             else if (messageId == JT808.终端鉴权)
             {
+                T0102 t0102 = (T0102) request;
+                AuthMessage authMessage = AuthMessage.builder()
+                        .imei(t0102.getImei())
+                        .simNumber(mobileNo12)
+                        .softwareVersion(t0102.getSoftwareVersion())
+                        .build();
 
+                messageProducer.sendRegistryEvent(RabbitMQConfig.DEVICE_AUTH_EVENT, authMessage);
             }
 
             else if (messageId == JT808.终端心跳)
             {
-                
+
             }
         }
 //        log.info("{}\n<<<<-{}\n>>>>-{}", session, request, response);
+    }
+
+    /**
+     * 根据安装后终端自身的手机号转换。
+     * 手机号不足12位，则在前补充数字，
+     * 大陆手机号补充数字0，
+     * 港澳台则根据其区号进行位数补充。
+     */
+    private String buildMobileNo12(String mobileNo)
+    {
+        if (mobileNo == null || mobileNo.isEmpty())
+        {
+            return null;
+        }
+        if (mobileNo.length() == 12)
+        {
+            return mobileNo;
+        }
+        if (mobileNo.length() == 11)
+        {
+            return "0" + mobileNo; // +86
+        }
+        // todo
+        return String.format("%012d", Long.parseLong(mobileNo));
     }
 }

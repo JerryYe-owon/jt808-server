@@ -22,9 +22,11 @@ public class RabbitMQConfig
     public static final String GPS_ROUTING_KEY = "*.gps";              // GPS updates
     public static final String CONTROL_ROUTING_KEY = "*.control";          // Backend → Gateway commands
     public static final String MEDIA_ROUTING_KEY = "*.media.*";          // Example: VEH12345.media.ch1
+    public static final String MEDIA_START_EVENT = "media.start";
 
     // Device Registry routing keys
-    public static final String DEVICE_REGISTER_EVENT = "*.device.register";
+    public static final String DEVICE_REGISTER_EVENT = "device.register";
+    public static final String DEVICE_AUTH_EVENT = "device.auth";
     public static final String HEARTBEAT_EVENT = "*.device.heartbeat";
     public static final String DEVICE_DISCONNECT_EVENT = "*.device.disconnect";
     public static final String GENERAL_STATUS_CHANGE = "*.device.status";
@@ -87,12 +89,27 @@ public class RabbitMQConfig
     }
 
     @Bean
+    public TopicExchange authExchange()
+    {
+        return ExchangeBuilder.topicExchange(REGISTRY_EXCHANGE).durable(true).build();
+    }
+
+    @Bean
     public Binding deviceRegisterBinding(Queue registryBackendQueue, TopicExchange registryExchange)
     {
         return BindingBuilder
                 .bind(registryBackendQueue)
                 .to(registryExchange)
                 .with(DEVICE_REGISTER_EVENT);
+    }
+
+    @Bean
+    public Binding deviceAuthBinding(Queue registryBackendQueue, TopicExchange registryExchange)
+    {
+        return BindingBuilder
+                .bind(registryBackendQueue)
+                .to(registryExchange)
+                .with(DEVICE_AUTH_EVENT);
     }
 
     @Bean

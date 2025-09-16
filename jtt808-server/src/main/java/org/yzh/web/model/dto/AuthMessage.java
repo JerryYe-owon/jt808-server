@@ -5,16 +5,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 @Data
-public class GPSMessage
+public class AuthMessage
 {
+    private String imei;
     private String simNumber;
-    private double longitude;
-    private double latitude;
-    private LocalDateTime deviceTime;
+    private String softwareVersion;
 }

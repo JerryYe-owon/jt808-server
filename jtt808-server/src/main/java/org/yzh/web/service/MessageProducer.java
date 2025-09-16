@@ -32,13 +32,11 @@ public class MessageProducer
     /**
      * Send a device registry event.
      *
-     * @param deviceId  device identifier (e.g., "DEV12345")
-     * @param eventType registry event type (e.g., "device.register", "device.heartbeat", "device.disconnect")
-     * @param payload   the actual message body (JSON or object)
+     * @param routingKey registry event type (e.g., "device.register", "device.heartbeat", "device.disconnect")
+     * @param payload    the actual message body (JSON or object)
      */
-    public void sendRegistryEvent(String deviceId, String eventType, Object payload)
+    public void sendRegistryEvent(String routingKey, Object payload)
     {
-        String routingKey = deviceId + "." + eventType; // e.g., DEV12345.device.register
         rabbitTemplate.convertAndSend(RabbitMQConfig.REGISTRY_EXCHANGE, routingKey, payload);
     }
 }
