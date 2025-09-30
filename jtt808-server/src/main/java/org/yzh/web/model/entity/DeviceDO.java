@@ -12,6 +12,7 @@ import java.util.Objects;
 public class DeviceDO {
 
     private String deviceModel;
+    private String makerId;
     @Schema(description = "设备id")
     private String deviceId;
     @Schema(description = "设备手机号")

@@ -63,6 +63,7 @@ public class JT808Endpoint {
         device.setMobileNo(message.getClientId());
         device.setDeviceId(message.getDeviceId());
         device.setPlateNo(message.getPlateNo());
+        device.setMakerId(message.getMakerId());
         session.setAttribute(SessionKey.Device, device);
 
         T8100 result = new T8100();

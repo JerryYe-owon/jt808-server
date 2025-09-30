@@ -141,6 +141,7 @@ public class JTHandlerInterceptor implements HandlerInterceptor<JTMessage> {
                         .plateNo(device.getPlateNo())
                         .deviceModel(device.getDeviceModel())
                         .deviceId(device.getDeviceId())
+                        .makerId(device.getMakerId())
                         .build();
 
                 messageProducer.sendRegistryEvent(RabbitMQConfig.DEVICE_REGISTER_EVENT, registryMessage);

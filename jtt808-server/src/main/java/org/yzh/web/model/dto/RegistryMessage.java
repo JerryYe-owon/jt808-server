@@ -16,4 +16,5 @@ public class RegistryMessage
     private String deviceId;
     private String simNumber;
     private String plateNo;
+    private String makerId;
 }
