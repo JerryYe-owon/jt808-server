@@ -24,6 +24,9 @@ import org.yzh.web.model.enums.SessionKey;
 @ConditionalOnProperty(value = "jt-server.jt808.enabled", havingValue = "true", matchIfMissing = true)
 public class JTConfig {
 
+    //标识位[2] + 消息头[21] + 消息体[1023 * 2(转义预留)]  + 校验码[1] + 标识位[2]
+    private final Integer maxFrameLength = 2 + 21 + 1023 * 2 + 1 + 2;
+
     @ConditionalOnProperty(value = "jt-server.jt808.tcp-port")
     @Bean(initMethod = "start", destroyMethod = "stop")
     public Server jt808TCPServer(JTMessageAdapter messageAdapter,
@@ -34,8 +37,7 @@ public class JTConfig {
         return NettyConfig.custom()
                 .setIdleStateTime(jtProperties.getIdleTimeout(), 0, 0)
                 .setPort(jtProperties.getTcpPort())
-                //标识位[2] + 消息头[21] + 消息体[1023 * 2(转义预留)]  + 校验码[1] + 标识位[2]
-                .setMaxFrameLength(2 + 21 + 1023 * 2 + 1 + 2)
+                .setMaxFrameLength(maxFrameLength)
                 .setDelimiters(new Delimiter(new byte[]{0x7e}, false))
                 .setDecoder(messageAdapter)
                 .setEncoder(messageAdapter)
@@ -81,7 +83,7 @@ public class JTConfig {
 
         return NettyConfig.custom()
                 .setPort(jtProperties.getT9208().getPort())
-                .setMaxFrameLength(2 + 21 + 1023 * 2 + 1 + 2)
+                .setMaxFrameLength(maxFrameLength)
                 .setLengthField(new LengthField(new byte[]{0x30, 0x31, 0x63, 0x64}, 1024 * 65, 58, 4))
                 .setDelimiters(new Delimiter(new byte[]{0x7e}, false))
                 .setDecoder(alarmFileMessageAdapter)

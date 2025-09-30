@@ -10,10 +10,8 @@ spring:
       date: yyyy-MM-dd
       time: HH:mm:ss
   rabbitmq:
-    host: 192.168.1.67
+    host: localhost
     port: 5672
-    username: owon
-    password: owon1234
 
 mybatis-plus:
   configuration:
