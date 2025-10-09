@@ -16,6 +16,7 @@ import org.yzh.web.model.dto.RegistryMessage;
 import org.yzh.web.model.entity.DeviceDO;
 import org.yzh.web.model.enums.SessionKey;
 import org.yzh.web.model.vo.T0200Ext;
+import org.yzh.web.service.DeviceSessionManager;
 import org.yzh.web.service.MessageProducer;
 
 @Slf4j
@@ -23,10 +24,12 @@ import org.yzh.web.service.MessageProducer;
 public class JTHandlerInterceptor implements HandlerInterceptor<JTMessage> {
 
     private final MessageProducer messageProducer;
+    private final DeviceSessionManager deviceSessionManager;
 
-    public JTHandlerInterceptor(MessageProducer messageProducer)
+    public JTHandlerInterceptor(MessageProducer messageProducer, DeviceSessionManager deviceSessionManager)
     {
         this.messageProducer = messageProducer;
+        this.deviceSessionManager = deviceSessionManager;
     }
 
     /** 未找到对应的Handle */
@@ -87,13 +90,19 @@ public class JTHandlerInterceptor implements HandlerInterceptor<JTMessage> {
         }
 
         int messageId = request.getMessageId();
+        String simNumber = request.getClientId();
 
         if (messageId == JT808.终端注册 || messageId == JT808.终端鉴权)
         {
             return true;
         }
 
-        if (messageId == JT808.位置信息汇报)
+        else if (messageId == JT808.终端心跳)
+        {
+            deviceSessionManager.updateHeartbeat(simNumber);
+        }
+
+        else if (messageId == JT808.位置信息汇报)
         {
             T0200 t0200 = (T0200) request;
             if (t0200.getDeviceTime() == null) {
@@ -102,15 +111,14 @@ public class JTHandlerInterceptor implements HandlerInterceptor<JTMessage> {
             request.setExtData(new T0200Ext(t0200));
 
             DeviceDO device = session.getAttribute(SessionKey.Device);
-            String mobileNo12 = buildMobileNo12(device.getMobileNo());
 
             GPSMessage gpsMessage = GPSMessage.builder()
                     .longitude(device.getLocation().getLng())
                     .latitude(device.getLocation().getLat())
                     .deviceTime(device.getLocation().getDeviceTime())
-                    .simNumber(mobileNo12)
+                    .simNumber(simNumber)
                     .build();
-            messageProducer.sendMessage(RabbitMQConfig.CONTROL_EXCHANGE, mobileNo12, "gps", gpsMessage);
+            messageProducer.sendMessage(RabbitMQConfig.CONTROL_EXCHANGE, simNumber, "gps", gpsMessage);
 
             return true;
         }
@@ -130,14 +138,13 @@ public class JTHandlerInterceptor implements HandlerInterceptor<JTMessage> {
 
             int messageId = request.getMessageId();
             DeviceDO device = session.getAttribute(SessionKey.Device);
-
-            String mobileNo12 = buildMobileNo12(device.getMobileNo());
+            String simNumber = device.getMobileNo();
 
             if (messageId == JT808.终端注册)
             {
                 RegistryMessage registryMessage = RegistryMessage.builder()
                         .protocolVersion(device.getProtocolVersion())
-                        .simNumber(mobileNo12)
+                        .simNumber(simNumber)
                         .plateNo(device.getPlateNo())
                         .deviceModel(device.getDeviceModel())
                         .deviceId(device.getDeviceId())
@@ -151,7 +158,7 @@ public class JTHandlerInterceptor implements HandlerInterceptor<JTMessage> {
                 T0102 t0102 = (T0102) request;
                 AuthMessage authMessage = AuthMessage.builder()
                         .imei(t0102.getImei())
-                        .simNumber(mobileNo12)
+                        .simNumber(simNumber)
                         .softwareVersion(t0102.getSoftwareVersion())
                         .build();
 
