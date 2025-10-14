@@ -7,7 +7,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.yzh.web.model.dto.HeartbeatMessage;
 
-import static org.yzh.web.config.RabbitMQConfig.*;
+import static org.yzh.web.config.RabbitMQConfig.HEARTBEAT_EVENT;
+import static org.yzh.web.config.RabbitMQConfig.REGISTRY_EXCHANGE;
 
 @Slf4j
 @Component
@@ -37,16 +38,9 @@ public class HeartbeatPublisher
 
         sessionManager.getHeartbeatMap().forEach((deviceId, lastTime) -> {
             boolean online = (now - lastTime) <= TIMEOUT_MS;
-
-            HeartbeatMessage message = HeartbeatMessage.builder()
-                    .deviceId(deviceId)
-                    .online(online)
-                    .lastHeartbeatTime(lastTime)
-                    .timestamp(now)
-                    .build();
-
-//            log.info("Publish heartbeat, {}, {}", HEARTBEAT_EVENT, message);
+            HeartbeatMessage message = new HeartbeatMessage(deviceId, online, lastTime, now);
             rabbitTemplate.convertAndSend(REGISTRY_EXCHANGE, HEARTBEAT_EVENT, message, messagePostProcessor);
+//            log.info("Publish heartbeat, {}, {}", HEARTBEAT_EVENT, message);
         });
     }
 

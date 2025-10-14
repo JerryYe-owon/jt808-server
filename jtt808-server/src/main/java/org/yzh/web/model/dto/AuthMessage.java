@@ -1,17 +1,9 @@
 package org.yzh.web.model.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-@AllArgsConstructor
-@NoArgsConstructor
-@Builder
-@Data
-public class AuthMessage
+public record AuthMessage(
+        String imei,
+        String simNumber,
+        String softwareVersion
+)
 {
-    private String imei;
-    private String simNumber;
-    private String softwareVersion;
 }

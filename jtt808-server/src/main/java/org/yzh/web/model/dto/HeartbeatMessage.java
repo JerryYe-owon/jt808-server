@@ -1,18 +1,9 @@
 package org.yzh.web.model.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-@AllArgsConstructor
-@NoArgsConstructor
-@Builder
-@Data
-public class HeartbeatMessage
+public record HeartbeatMessage(
+        String deviceId,
+        Boolean online,
+        Long lastHeartbeatTime,
+        Long timestamp)
 {
-    private String deviceId;
-    private Boolean online;
-    private Long lastHeartbeatTime;
-    private Long timestamp;
 }
