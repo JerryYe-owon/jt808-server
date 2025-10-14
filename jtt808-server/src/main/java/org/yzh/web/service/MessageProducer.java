@@ -29,6 +29,11 @@ public class MessageProducer
         rabbitTemplate.convertAndSend(exchange, routingKey, payload);
     }
 
+    public void sendMessage(String exchange, String routingKey, Object payload)
+    {
+        rabbitTemplate.convertAndSend(exchange, routingKey, payload);
+    }
+
     /**
      * Send a device registry event.
      *

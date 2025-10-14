@@ -126,9 +126,7 @@ public class JT808Endpoint {
 
         if (message.getPackageTotal().equals(message.getPackageNo()))
         {
-//            log.info("is completed");
-
-
+            messageProducer.sendMessage(RabbitMQConfig.CONTROL_EXCHANGE, "device.response.t8104", message);
         }
     }
 

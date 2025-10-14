@@ -18,6 +18,7 @@ public class RabbitMQConfig
     public static final String MEDIA_QUEUE_BACKEND = "jt1078.media.backend.queue";
     public static final String REGISTRY_QUEUE_BACKEND = "device.registry.backend.queue";
     public static final String HEARTBEAT_QUEUE_BACKEND = "device.heartbeat.backend.queue";
+    public static final String RESPONSE_QUEUE_BACKEND = "device.response.backend.queue";
 
     // --- Routing keys (topic pattern) ---
     public static final String GPS_ROUTING_KEY = "*.gps";                    // GPS updates
@@ -32,6 +33,7 @@ public class RabbitMQConfig
     public static final String HEARTBEAT_EVENT = "device.heartbeat";
     public static final String GENERAL_STATUS_CHANGE = "device.status";    // General status change (fallback)
 
+    public static final String DEVICE_RESPONSE = "device.response.*";
 
     // === DEVICE REGISTRY ===
     @Bean
@@ -111,6 +113,22 @@ public class RabbitMQConfig
                 .with(HEARTBEAT_EVENT);
     }
 
+    // === RESPONSE ===
+    @Bean
+    public Queue responseBackendQueue()
+    {
+        return QueueBuilder.durable(RESPONSE_QUEUE_BACKEND).build();
+    }
+
+    @Bean
+    public Binding deviceResponseBinding(Queue responseBackendQueue, TopicExchange controlExchange)
+    {
+        return BindingBuilder
+                .bind(responseBackendQueue)
+                .to(controlExchange)
+                .with(DEVICE_RESPONSE);
+    }
+
     // === CONTROL ===
     @Bean
     public Queue controlBackendQueue()
@@ -154,5 +172,4 @@ public class RabbitMQConfig
                 .to(mediaExchange)
                 .with(MEDIA_ROUTING_KEY);
     }
-
 }
