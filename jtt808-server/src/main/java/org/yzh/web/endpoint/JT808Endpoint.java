@@ -124,7 +124,8 @@ public class JT808Endpoint {
     public void T0104(T0104 message, Session session) {
         session.response(message);
 
-        if (message.getPackageTotal().equals(message.getPackageNo()))
+        // 查询单独参数时，无分包，不发送到 MQ
+        if (message.isSubpackage() && message.getPackageTotal() != null && message.getPackageTotal().equals(message.getPackageNo()))
         {
             messageProducer.sendMessage(RabbitMQConfig.CONTROL_EXCHANGE, "device.response.t8104", message);
         }
