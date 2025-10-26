@@ -46,21 +46,21 @@ public class OtherController {
 
     @Operation(summary = "终端实时信息查询")
     @GetMapping("device/all")
-    public R<Collection<Session>> all() {
+    public Collection<Session> all() {
         Collection<Session> all = sessionManager.values();
-        return R.success(all);
+        return all;
     }
 
     @Operation(summary = "获得当前所有在线设备信息")
     @GetMapping("device/option")
-    public R<Collection<DeviceDO>> getClientId() {
+    public Collection<DeviceDO> getClientId() {
         AdapterCollection<Session, DeviceDO> result = new AdapterCollection<>(sessionManager.values(), session -> {
             DeviceDO device = session.getAttribute(SessionKey.Device);
             if (device != null)
                 return device;
             return new DeviceDO().setMobileNo(session.getClientId());
         });
-        return R.success(result);
+        return result;
     }
 
     @Operation(summary = "SSE事件订阅")

@@ -114,7 +114,7 @@ Elucidator 运行效果如下：
 
 ![Console](https://images.gitee.com/uploads/images/2021/0714/171301_9f44b193_670717.jpeg)
 
-# 开发步骤
+# 协议扩展
 
 ## 1.定义消息
  ```java
@@ -181,12 +181,9 @@ public class JT808Controller {
     private MessageManager messageManager;
 
     @Operation(summary = "8103 设置终端参数")
-    @PutMapping("parameters")
-    public T0001 setParameters(@Parameter(description = "终端手机号") @RequestParam String clientId, @RequestBody Parameters parameters) {
-        Map<Integer, Object> map = parameters.toMap();
-        T8103 request = new T8103(map);
-        T0001 response = messageManager.request(clientId, request, T0001.class);
-        return response;
+    @PostMapping("8103")
+    public Mono<T0001> T8103(@RequestBody T8103 request) {
+        return messageManager.request(request, T0001.class);
     }
 }
 ```
@@ -199,6 +196,57 @@ public class JT808Controller {
 * @Mapping，消息映射到方法，等价SpringMVC中 @RequestMapping
 * @Async，异步消息处理，用于较为耗时的操作（例如文件写入）。
 * @AsyncBatch，消息批量处理，对于高并发的消息（例如：位置信息汇报），合并同类消息，提升入库性能。
+
+
+# 项目集成方式
+<img src="协议文档/推荐的集成方式.jpg" width="500px" />
+
+如果你的业务系统使用springboot，推荐使用maven依赖项集成该项目
+
+运行maven的install命令将jtt808-protocol模块安装到本地maven库，或deploy发布到maven私有仓库
+
+在项目pom.xml文件中加入刚刚发布的组件
+```xml
+<dependency>
+    <groupId>org.yzh</groupId>
+    <artifactId>jtt808-protocol</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+</dependency>
+```
+
+在application.yml中加入jtt808-server的http调用地址
+```yml
+jt808-service:
+  base-url: http://127.0.0.1:8100
+```
+
+代码中可使用以下方式调用808服务
+
+非阻塞的调用方式请参考jtt808-server下的org.yzh.JT808ServiceTest
+```java
+package com.xxx;
+
+import org.yzh.protocol.service.JT808Service;
+
+@Service
+public class YourService {
+
+    @Autowired
+    private JT808Service jt808Service;
+
+    public void test() {
+        JTMessage message = new JTMessage();
+        message.setClientId("12345678901");
+        try {
+            T0001 result = jt808Service.send("8304", message);
+            System.out.println(result);
+        } catch (WebClientResponseException e) {
+            R error = e.getResponseBodyAs(R.class);
+            System.out.println(error);
+        }
+    }
+}
+```
 
 目录结构
 ```sh
@@ -234,28 +282,37 @@ public class JT808Controller {
 
 项目创立于2017年9月，至今，jt808-server已接入多家公司的线上产品线，接入场景如车辆管理平台，IOT业务和大数据作业等，截止最新统计时间为止，jt808-server已接入的公司包括不限于：
 
-	- 1.福建九桃贸易有限公司
-	- 2.深圳市特维视科技有限公司
-	- 3.厦门河联信息科技有限公司
-	- 4.北京华盾互联科技有限公司
-	- 5.宜昌华维物流有限责任公司
-	- 6.江苏推米信息科技有限公司
-	- 7.山东六度信息科技有限公司
-	- 8.亚信创新技术(南京)有限公司
-	- 9.无锡创趣网络科技有限公司
-	- 10.新疆智联云信息科技有限公司
-	- 11.杭州品铂科技有限公司
-	- 12.萍乡萍钢安源钢铁有限公司
-	- 13.承德统凯网络科技有限公司
-	- 14.陕西省君凯电子科技有限公司
-	- 15.北京晓羊集团
-	- 16.成都谷帝科技有限公司
-	- 17.西安长城数字软件有限公司
-	- 18.上海昕鼎网络科技有限公司
-	- 19.江西简悠信息技术有限公司
-	- 20.上海物泊科技有限公司
-	- 21.贵州泰恒元科技股份有限公司
-	- 22.湖南高仕达信息技术有限公司
+	- 福建九桃贸易有限公司
+	- 深圳市特维视科技有限公司
+	- 厦门河联信息科技有限公司
+	- 北京华盾互联科技有限公司
+	- 宜昌华维物流有限责任公司
+	- 江苏推米信息科技有限公司
+	- 山东六度信息科技有限公司
+	- 亚信创新技术(南京)有限公司
+	- 无锡创趣网络科技有限公司
+	- 新疆智联云信息科技有限公司
+	- 杭州品铂科技有限公司
+	- 萍乡萍钢安源钢铁有限公司
+	- 承德统凯网络科技有限公司
+	- 陕西省君凯电子科技有限公司
+	- 北京晓羊集团
+	- 成都谷帝科技有限公司
+	- 西安长城数字软件有限公司
+	- 上海昕鼎网络科技有限公司
+	- 江西简悠信息技术有限公司
+	- 上海物泊科技有限公司
+	- 贵州泰恒元科技股份有限公司
+	- 湖南高仕达信息技术有限公司
+    - 山东众安安防服务有限公司
+    - 南京易添信息技术有限公司
+    - 陕西点三信息技术有限公司
+    - 福建省为美生态科技有限公司
+    - 烟台海德专用汽车有限公司
+    - 深圳启慧云科技有限公司
+    - 上海勤电信息科技有限公司
+    - 东风集团智慧环卫数字治理平台
+    - 山东盈科数智信息技术有限公司
     - ……
 
 > 更多接入的公司，欢迎在 [登记地址](https://gitee.com/yezhihao/jt808-server/issues/I36WKD ) 登记，登记仅仅为了项目推广(登记后可提供一次技术支持)。
