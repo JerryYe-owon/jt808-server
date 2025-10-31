@@ -1,4 +1,4 @@
-FROM maven:3.9.11-eclipse-temurin-21-alpine AS jar-builder
+FROM maven:3.9.11-eclipse-temurin-25-alpine AS jar-builder
 
 # Set working directory
 WORKDIR /app
