@@ -241,7 +241,7 @@
         fetch(`${domain}/device/option`)
             .then(res => res.json())
             .then(res => {
-                onRender(res.data)
+                onRender(res)
                 eventSource = new EventSource(`${domain}/sse/connect`)
                 eventSource.addEventListener('start', e => userId = e.data)
                 eventSource.addEventListener('open', e => console.log(`建立连接`))
