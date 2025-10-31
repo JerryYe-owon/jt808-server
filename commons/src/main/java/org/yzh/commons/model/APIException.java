@@ -2,6 +2,7 @@ package org.yzh.commons.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 
@@ -9,6 +10,7 @@ import lombok.experimental.Accessors;
  * @author yezhihao
  * https://gitee.com/yezhihao/jt808-server
  */
+@EqualsAndHashCode(callSuper = true)
 @ToString
 @Data
 @Accessors(chain = true)

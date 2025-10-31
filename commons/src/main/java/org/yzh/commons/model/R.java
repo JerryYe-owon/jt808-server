@@ -120,22 +120,18 @@ public class R<T> {
             this.data = that.data;
         }
 
-        @Override
         public ImmutableR<T> setCode(int code) {
             throw new UnsupportedOperationException();
         }
 
-        @Override
         public ImmutableR<T> setMsg(String msg) {
             throw new UnsupportedOperationException();
         }
 
-        @Override
         public ImmutableR<T> setDetails(String details) {
             throw new UnsupportedOperationException();
         }
 
-        @Override
         public ImmutableR<T> setData(T data) {
             throw new UnsupportedOperationException();
         }
