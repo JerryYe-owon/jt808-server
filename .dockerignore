@@ -1,0 +1,35 @@
+# Build artifacts
+target/
+*/target/
+#!target/*.jar
+#!*/target/*.jar
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+README.md
+docs/
+
+# Test files
+**/*test*
+**/*Test*
+
+# Logs
+*.log
+logs/
+
+data/
+协议文档/
