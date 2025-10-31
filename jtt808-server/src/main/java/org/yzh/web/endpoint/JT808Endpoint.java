@@ -11,9 +11,15 @@ import org.springframework.stereotype.Component;
 import org.yzh.protocol.basics.JTMessage;
 import org.yzh.protocol.commons.JT808;
 import org.yzh.protocol.t808.*;
+import org.yzh.web.config.RabbitMQConfig;
+import org.yzh.web.model.dto.AuthMessage;
+import org.yzh.web.model.dto.GPSMessage;
+import org.yzh.web.model.dto.RegistryMessage;
 import org.yzh.web.model.entity.DeviceDO;
 import org.yzh.web.model.enums.SessionKey;
+import org.yzh.web.service.DeviceSessionManager;
 import org.yzh.web.service.FileService;
+import org.yzh.web.service.MessageProducer;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -29,6 +35,10 @@ public class JT808Endpoint {
 
     private final FileService fileService;
 
+    private final MessageProducer messageProducer;
+
+    private final DeviceSessionManager deviceSessionManager;
+
     @Mapping(types = 终端通用应答, desc = "终端通用应答")
     public Object T0001(T0001 message, Session session) {
         session.response(message);
@@ -37,6 +47,7 @@ public class JT808Endpoint {
 
     @Mapping(types = 终端心跳, desc = "终端心跳")
     public void T0002(JTMessage message, Session session) {
+        deviceSessionManager.updateHeartbeat(message.getClientId());
     }
 
     @Mapping(types = 终端注销, desc = "终端注销")
@@ -59,10 +70,22 @@ public class JT808Endpoint {
         session.register(message);
         DeviceDO device = new DeviceDO();
         device.setProtocolVersion(message.getProtocolVersion());
+        device.setDeviceModel(message.getDeviceModel());
         device.setMobileNo(message.getClientId());
         device.setDeviceId(message.getDeviceId());
         device.setPlateNo(message.getPlateNo());
+        device.setMakerId(message.getMakerId());
         session.setAttribute(SessionKey.Device, device);
+
+        RegistryMessage registryMessage = new RegistryMessage(
+                device.getProtocolVersion(),
+                message.getDeviceModel(),
+                message.getDeviceId(),
+                message.getClientId(),
+                message.getPlateNo(),
+                message.getMakerId()
+        );
+        messageProducer.sendRegistryEvent(RabbitMQConfig.DEVICE_REGISTER_EVENT, registryMessage);
 
         T8100 result = new T8100();
         result.setResponseSerialNo(message.getSerialNo());
@@ -83,6 +106,13 @@ public class JT808Endpoint {
             device.setPlateNo(token[1]);
         session.setAttribute(SessionKey.Device, device);
 
+        AuthMessage authMessage = new AuthMessage(
+                message.getImei(),
+                message.getClientId(),
+                message.getSoftwareVersion()
+        );
+        messageProducer.sendRegistryEvent(RabbitMQConfig.DEVICE_AUTH_EVENT, authMessage);
+
         T0001 result = new T0001();
         result.setResponseSerialNo(message.getSerialNo());
         result.setResponseMessageId(message.getMessageId());
@@ -93,6 +123,12 @@ public class JT808Endpoint {
     @Mapping(types = 查询终端参数应答, desc = "查询终端参数应答")
     public void T0104(T0104 message, Session session) {
         session.response(message);
+
+        // 查询单独参数时，无分包，不发送到 MQ
+        if (message.isSubpackage() && message.getPackageTotal() != null && message.getPackageTotal().equals(message.getPackageNo()))
+        {
+            messageProducer.sendMessage(RabbitMQConfig.CONTROL_EXCHANGE, "device.response.t8104", message);
+        }
     }
 
     @Mapping(types = 查询终端属性应答, desc = "查询终端属性应答")
@@ -113,6 +149,16 @@ public class JT808Endpoint {
     @AsyncBatch(poolSize = 2, maxElements = 4000, maxWait = 1000)
     @Mapping(types = 位置信息汇报, desc = "位置信息汇报")
     public void T0200(List<T0200> list) {
+
+        list.forEach(t0200 -> {
+            GPSMessage gpsMessage = new GPSMessage(
+                    t0200.getClientId(),
+                    t0200.getLng(),
+                    t0200.getLat(),
+                    t0200.getDeviceTime()
+            );
+            messageProducer.sendMessage(RabbitMQConfig.CONTROL_EXCHANGE, t0200.getClientId(), "gps", gpsMessage);
+        });
     }
 
     @Mapping(types = 定位数据批量上传, desc = "定位数据批量上传")
