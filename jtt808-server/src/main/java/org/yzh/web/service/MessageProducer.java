@@ -19,13 +19,13 @@ public class MessageProducer
      * Send a control or media message for a specific vehicle.
      *
      * @param exchange    which exchange to publish (CONTROL_EXCHANGE or MEDIA_EXCHANGE)
-     * @param vehicleId   vehicle identifier (e.g., "vehicle123")
+     * @param simNo   vehicle identifier (e.g., "vehicle123")
      * @param messageType message type (e.g., "gps", "media.start", "media.stop")
      * @param payload     the actual message body (JSON or object)
      */
-    public void sendMessage(String exchange, String vehicleId, String messageType, Object payload)
+    public void sendMessage(String exchange, String simNo, String messageType, Object payload)
     {
-        String routingKey = vehicleId + "." + messageType; // e.g., vehicle123.gps
+        String routingKey = simNo + "." + messageType; // e.g., vehicle123.gps
         rabbitTemplate.convertAndSend(exchange, routingKey, payload);
     }
 
