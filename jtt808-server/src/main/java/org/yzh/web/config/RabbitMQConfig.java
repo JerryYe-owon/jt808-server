@@ -10,21 +10,16 @@ public class RabbitMQConfig
 
     // --- Exchange names ---
     public static final String CONTROL_EXCHANGE = "jt808.control.exchange";
-    public static final String MEDIA_EXCHANGE = "jt1078.media.exchange";
     public static final String REGISTRY_EXCHANGE = "device.registry.exchange";
 
     // --- Queue names ---
     public static final String CONTROL_QUEUE_BACKEND = "jt808.control.backend.queue";
-    public static final String MEDIA_QUEUE_BACKEND = "jt1078.media.backend.queue";
     public static final String REGISTRY_QUEUE_BACKEND = "device.registry.backend.queue";
     public static final String HEARTBEAT_QUEUE_BACKEND = "device.heartbeat.backend.queue";
     public static final String RESPONSE_QUEUE_BACKEND = "device.response.backend.queue";
 
     // --- Routing keys (topic pattern) ---
     public static final String GPS_ROUTING_KEY = "*.gps";                    // GPS updates
-    public static final String CONTROL_ROUTING_KEY = "*.control";            // Backend → Gateway commands
-    public static final String MEDIA_ROUTING_KEY = "*.media.*";              // Example: VEH12345.media.ch1
-    public static final String MEDIA_START_EVENT = "media.start";
 
     // --- Device Registry routing keys ---
     public static final String DEVICE_REGISTER_EVENT = "device.register";
@@ -149,27 +144,5 @@ public class RabbitMQConfig
                 .bind(controlBackendQueue)
                 .to(controlExchange)
                 .with(GPS_ROUTING_KEY);
-    }
-
-    // === MEDIA ===
-    @Bean
-    public Queue mediaBackendQueue()
-    {
-        return QueueBuilder.durable(MEDIA_QUEUE_BACKEND).build();
-    }
-
-    @Bean
-    public TopicExchange mediaExchange()
-    {
-        return ExchangeBuilder.topicExchange(MEDIA_EXCHANGE).durable(true).build();
-    }
-
-    @Bean
-    public Binding mediaBinding(Queue mediaBackendQueue, TopicExchange mediaExchange)
-    {
-        return BindingBuilder
-                .bind(mediaBackendQueue)
-                .to(mediaExchange)
-                .with(MEDIA_ROUTING_KEY);
     }
 }
