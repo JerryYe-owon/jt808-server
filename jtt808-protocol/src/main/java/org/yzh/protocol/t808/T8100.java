@@ -4,6 +4,7 @@ import io.github.yezhihao.netmc.core.model.Response;
 import io.github.yezhihao.protostar.annotation.Field;
 import io.github.yezhihao.protostar.annotation.Message;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.yzh.protocol.basics.JTMessage;
@@ -17,6 +18,7 @@ import org.yzh.protocol.commons.JT808;
 @Data
 @Accessors(chain = true)
 @Message(JT808.终端注册应答)
+@EqualsAndHashCode(callSuper=false)
 public class T8100 extends JTMessage implements Response {
 
     /** 0.成功 */
