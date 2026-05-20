@@ -1,6 +1,7 @@
 package org.yzh.web.config;
 
 import lombok.Data;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.StringUtils;
@@ -9,6 +10,10 @@ import org.yzh.protocol.commons.JT1078;
 import org.yzh.protocol.commons.transform.attribute.Alarm;
 import org.yzh.protocol.jsatl12.T9208;
 import org.yzh.protocol.t1078.T9206;
+import org.yzh.web.model.enums.Video360Mode;
+
+import java.util.EnumMap;
+import java.util.Map;
 
 /**
  * @author yezhihao
@@ -17,7 +22,7 @@ import org.yzh.protocol.t1078.T9206;
 @Data
 @Configuration
 @ConfigurationProperties(prefix = "jt-server.jt808")
-public class JTProperties {
+public class JTProperties implements InitializingBean {
 
     /** 是否启用 */
     private boolean enabled;
@@ -30,6 +35,7 @@ public class JTProperties {
     private C0801 t0801;
     private C9208 t9208;
     private C9206 t9206;
+    private CVideo360 video360 = new CVideo360();
 
     @Data
     public static class C0801 {
@@ -59,6 +65,46 @@ public class JTProperties {
         private String username;
         /** T9206文件上传指令 FTP密码 */
         private String password;
+    }
+
+    @Data
+    public static class CVideo360 {
+        /** JT1078 360虚拟通道号映射 */
+        private Map<Video360Mode, Integer> channels = Video360Mode.defaultChannels();
+
+        public void setChannels(Map<Video360Mode, Integer> channels) {
+            EnumMap<Video360Mode, Integer> merged = Video360Mode.defaultChannels();
+            if (channels != null) {
+                channels.forEach((mode, channelNo) -> {
+                    if (mode != null && channelNo != null)
+                        merged.put(mode, Video360Mode.validateChannelNo(mode, channelNo));
+                });
+            }
+            this.channels = merged;
+        }
+
+        public int channelNo(Video360Mode mode) {
+            return mode.resolveChannelNo(channels);
+        }
+
+        public void validate() {
+            if (channels != null)
+                channels.forEach((mode, channelNo) -> {
+                    if (mode != null && channelNo != null)
+                        Video360Mode.validateChannelNo(mode, channelNo);
+                });
+        }
+    }
+
+    public int resolveVideo360Channel(Video360Mode mode) {
+        return video360.channelNo(mode);
+    }
+
+    @Override
+    public void afterPropertiesSet() {
+        if (video360 == null)
+            video360 = new CVideo360();
+        video360.validate();
     }
 
     public T9206 newT9206() {

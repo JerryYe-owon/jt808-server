@@ -49,3 +49,12 @@ jt-server:
       port: 21
       username: test
       password: test
+    video360:
+      channels:
+        panorama: 240
+        panorama-any: 241
+        panorama-rear: 242
+        panorama-front: 243
+        panorama-left: 244
+        panorama-right: 245
+        keep-rotation: 246
