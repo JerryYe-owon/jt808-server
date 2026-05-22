@@ -50,8 +50,6 @@ public class JT1078Controller {
     public Mono<T0001> T9101Video360(@PathVariable String mode, @RequestBody JsonNode body) {
         T9101 request = readBody(body, T9101.class);
         request.setChannelNo(resolveVideo360Channel(mode));
-        if (!body.has("mediaType"))
-            request.setMediaType(1);
         return T9101(request);
     }
 
@@ -59,13 +57,6 @@ public class JT1078Controller {
     @PostMapping("9102")
     public Mono<T0001> T9102(@RequestBody T9102 request) {
         return messageManager.request(request, T0001.class);
-    }
-
-    @Operation(summary = "9102 360音视频实时传输控制")
-    @PostMapping("9102/360/{mode}/control")
-    public Mono<T0001> T9102Video360(@PathVariable String mode, @RequestBody T9102 request) {
-        request.setChannelNo(resolveVideo360Channel(mode));
-        return T9102(request);
     }
 
     @Operation(summary = "9201 平台下发远程录像回放请求")
