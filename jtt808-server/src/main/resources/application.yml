@@ -42,10 +42,19 @@ jt-server:
     t9208:
       host: 127.0.0.1
       port: 7200
-      enabled: true
+      enabled: false
       path: D:/jt_data/alarm_file
     t9206:
       host: 127.0.0.1
       port: 21
       username: test
       password: test
+    video360:
+      channels:
+        panorama: 240
+        panorama-any: 241
+        panorama-rear: 242
+        panorama-front: 243
+        panorama-left: 244
+        panorama-right: 245
+        keep-rotation: 246

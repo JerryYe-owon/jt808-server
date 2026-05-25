@@ -1,11 +1,17 @@
 package org.yzh.web.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 import org.yzh.protocol.basics.JTMessage;
 import org.yzh.protocol.commons.JT1078;
 import org.yzh.protocol.jsatl12.T9208;
@@ -13,6 +19,7 @@ import org.yzh.protocol.t1078.*;
 import org.yzh.protocol.t808.T0001;
 import org.yzh.web.config.JTProperties;
 import org.yzh.web.endpoint.MessageManager;
+import org.yzh.web.model.enums.Video360Mode;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -24,6 +31,8 @@ public class JT1078Controller {
 
     private final JTProperties jtProperties;
 
+    private final ObjectMapper objectMapper;
+
     @Operation(summary = "9003 查询终端音视频属性")
     @PostMapping("9003")
     public Mono<T1003> T9003(@RequestBody JTMessage request) {
@@ -34,6 +43,14 @@ public class JT1078Controller {
     @PostMapping("9101")
     public Mono<T0001> T9101(@RequestBody T9101 request) {
         return messageManager.request(request, T0001.class);
+    }
+
+    @Operation(summary = "9101 360实时音视频传输请求")
+    @PostMapping("9101/360/{mode}")
+    public Mono<T0001> T9101Video360(@PathVariable String mode, @RequestBody JsonNode body) {
+        T9101 request = readBody(body, T9101.class);
+        request.setChannelNo(resolveVideo360Channel(mode));
+        return T9101(request);
     }
 
     @Operation(summary = "9102 音视频实时传输控制")
@@ -114,5 +131,21 @@ public class JT1078Controller {
     @PostMapping("9306")
     public Mono<T0001> T9306(@RequestBody T9302 request) {
         return messageManager.request(request.setMessageId(JT1078.云台变倍控制), T0001.class);
+    }
+
+    private int resolveVideo360Channel(String mode) {
+        try {
+            return jtProperties.resolveVideo360Channel(Video360Mode.fromPath(mode));
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+        }
+    }
+
+    private <T> T readBody(JsonNode body, Class<T> bodyClass) {
+        try {
+            return objectMapper.treeToValue(body, bodyClass);
+        } catch (JsonProcessingException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid request body", e);
+        }
     }
 }
