@@ -72,6 +72,7 @@ public class JTProperties implements InitializingBean {
         /** JT1078 360虚拟通道号映射 */
         private Map<Video360Mode, Integer> channels = Video360Mode.defaultChannels();
 
+        // Merge from application profile
         public void setChannels(Map<Video360Mode, Integer> channels) {
             EnumMap<Video360Mode, Integer> merged = Video360Mode.defaultChannels();
             if (channels != null) {
