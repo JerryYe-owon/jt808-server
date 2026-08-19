@@ -3,6 +3,7 @@ package org.yzh.protocol.t808;
 import io.github.yezhihao.protostar.annotation.Field;
 import io.github.yezhihao.protostar.annotation.Message;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.yzh.protocol.basics.JTMessage;
@@ -19,6 +20,7 @@ import java.util.Map;
  */
 @ToString
 @Data
+@EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @Message(JT808.位置信息汇报)
 public class T0200 extends JTMessage {

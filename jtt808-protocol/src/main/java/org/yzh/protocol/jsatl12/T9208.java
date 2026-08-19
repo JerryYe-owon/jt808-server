@@ -3,6 +3,7 @@ package org.yzh.protocol.jsatl12;
 import io.github.yezhihao.protostar.annotation.Field;
 import io.github.yezhihao.protostar.annotation.Message;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.yzh.protocol.basics.JTMessage;
@@ -16,6 +17,7 @@ import java.time.LocalDateTime;
  */
 @ToString
 @Data
+@EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @Message(JSATL12.报警附件上传指令)
 public class T9208 extends JTMessage {

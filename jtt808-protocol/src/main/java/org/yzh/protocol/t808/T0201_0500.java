@@ -5,6 +5,7 @@ import io.github.yezhihao.protostar.annotation.Field;
 import io.github.yezhihao.protostar.annotation.MergeSuperclass;
 import io.github.yezhihao.protostar.annotation.Message;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.yzh.protocol.commons.JT808;
@@ -15,6 +16,7 @@ import org.yzh.protocol.commons.JT808;
  */
 @ToString
 @Data
+@EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @MergeSuperclass
 @Message({JT808.位置信息查询应答, JT808.车辆控制应答})

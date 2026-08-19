@@ -4,6 +4,7 @@ import io.github.yezhihao.protostar.annotation.Field;
 import io.github.yezhihao.protostar.annotation.Message;
 import io.github.yezhihao.protostar.util.KeyValuePair;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.yzh.protocol.basics.JTMessage;
@@ -16,6 +17,7 @@ import org.yzh.protocol.commons.transform.PassthroughConverter;
  */
 @ToString
 @Data
+@EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @Message(JT808.数据上行透传)
 public class T0900 extends JTMessage {

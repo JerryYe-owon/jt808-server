@@ -5,6 +5,7 @@ import io.github.yezhihao.protostar.annotation.Field;
 import io.github.yezhihao.protostar.annotation.Message;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.yzh.protocol.basics.JTMessage;
@@ -22,6 +23,7 @@ import java.util.function.Function;
  */
 @ToString
 @Data
+@EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @Message(JT808.设置终端参数)
 public class T8103 extends JTMessage {

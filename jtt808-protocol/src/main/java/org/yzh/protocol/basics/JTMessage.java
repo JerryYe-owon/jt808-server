@@ -7,7 +7,6 @@ import io.github.yezhihao.protostar.annotation.Field;
 import io.github.yezhihao.protostar.util.ToStringBuilder;
 import io.netty.buffer.ByteBuf;
 import lombok.Data;
-import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.yzh.protocol.commons.MessageId;
 
@@ -15,7 +14,6 @@ import org.yzh.protocol.commons.MessageId;
  * @author yezhihao
  * https://gitee.com/yezhihao/jt808-server
  */
-@ToString
 @Data
 @Accessors(chain = true)
 public class JTMessage implements Message {

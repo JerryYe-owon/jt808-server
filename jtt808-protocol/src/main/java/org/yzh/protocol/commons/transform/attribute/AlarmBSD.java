@@ -2,6 +2,7 @@ package org.yzh.protocol.commons.transform.attribute;
 
 import io.github.yezhihao.protostar.annotation.Field;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
  */
 @ToString
 @Data
+@EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 public class AlarmBSD extends Alarm {
 

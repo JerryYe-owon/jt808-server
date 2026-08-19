@@ -2,6 +2,7 @@ package org.yzh.protocol.commons.transform.attribute;
 
 import io.github.yezhihao.protostar.annotation.Field;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 
@@ -13,6 +14,7 @@ import java.util.List;
  */
 @ToString
 @Data
+@EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 public class AlarmTPMS extends Alarm {
 

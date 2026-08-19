@@ -4,6 +4,7 @@ import io.github.yezhihao.netmc.core.model.Response;
 import io.github.yezhihao.protostar.annotation.Field;
 import io.github.yezhihao.protostar.annotation.Message;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.yzh.protocol.basics.JTMessage;
@@ -14,6 +15,7 @@ import java.util.List;
 
 @ToString
 @Data
+@EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @Message(JT1078.终端上传音视频资源列表)
 public class T1205 extends JTMessage implements Response {

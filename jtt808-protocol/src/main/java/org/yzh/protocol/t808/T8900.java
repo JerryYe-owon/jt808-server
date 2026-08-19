@@ -5,6 +5,7 @@ import io.github.yezhihao.protostar.annotation.Message;
 import io.github.yezhihao.protostar.util.KeyValuePair;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.yzh.protocol.basics.JTMessage;
@@ -19,6 +20,7 @@ import org.yzh.protocol.commons.transform.passthrough.PeripheralSystem;
  */
 @ToString
 @Data
+@EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @Message(JT808.数据下行透传)
 public class T8900 extends JTMessage {

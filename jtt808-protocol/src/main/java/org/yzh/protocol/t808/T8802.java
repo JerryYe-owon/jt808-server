@@ -3,6 +3,7 @@ package org.yzh.protocol.t808;
 import io.github.yezhihao.protostar.annotation.Field;
 import io.github.yezhihao.protostar.annotation.Message;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.yzh.protocol.basics.JTMessage;
@@ -16,6 +17,7 @@ import java.time.LocalDateTime;
  */
 @ToString
 @Data
+@EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @Message(JT808.存储多媒体数据检索)
 public class T8802 extends JTMessage {

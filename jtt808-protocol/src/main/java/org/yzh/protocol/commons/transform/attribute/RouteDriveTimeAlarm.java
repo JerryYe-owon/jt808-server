@@ -3,6 +3,7 @@ package org.yzh.protocol.commons.transform.attribute;
 import io.github.yezhihao.protostar.Schema;
 import io.netty.buffer.ByteBuf;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 
@@ -12,6 +13,7 @@ import lombok.experimental.Accessors;
  */
 @ToString
 @Data
+@EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 public class RouteDriveTimeAlarm extends Alarm {
 

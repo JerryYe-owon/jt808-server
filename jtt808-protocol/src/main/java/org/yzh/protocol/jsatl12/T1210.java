@@ -4,6 +4,7 @@ import io.github.yezhihao.protostar.annotation.Field;
 import io.github.yezhihao.protostar.annotation.Message;
 import io.netty.util.internal.StringUtil;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.yzh.protocol.basics.JTMessage;
@@ -18,6 +19,7 @@ import java.util.List;
  */
 @ToString
 @Data
+@EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
 @Message(JSATL12.报警附件信息消息)
 public class T1210 extends JTMessage {
