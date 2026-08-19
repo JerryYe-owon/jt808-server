@@ -11,6 +11,9 @@ Thumbs.db
 # Build Artifacts
 
 .git*
+!.github/
+!.github/workflows/
+!.github/workflows/*.yml
 .gradle/
 build/
 target/
