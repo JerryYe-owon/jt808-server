@@ -158,7 +158,7 @@ public class JT808Endpoint {
                     t0200.getAltitude(),
                     t0200.getSpeed(),
                     t0200.getDirection(),
-                    t0200.getDeviceTime()
+                    t0200.getDeviceTime().atOffset(ZoneOffset.ofHours(8))
             );
             messageProducer.sendMessage(RabbitMQConfig.CONTROL_EXCHANGE, t0200.getClientId(), "gps", gpsMessage);
         });
