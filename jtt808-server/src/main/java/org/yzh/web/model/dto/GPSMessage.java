@@ -1,6 +1,7 @@
 package org.yzh.web.model.dto;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 public record GPSMessage(
         String simNumber,
@@ -9,6 +10,6 @@ public record GPSMessage(
         int altitude,
         int speed,
         int direction,
-        LocalDateTime deviceTime)
+        @JsonFormat(shape = JsonFormat.Shape.STRING) OffsetDateTime deviceTime)
 {
 }
