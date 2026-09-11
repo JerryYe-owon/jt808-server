@@ -7,6 +7,10 @@ permissions:
   contents: read
   packages: write
 
+concurrency:
+  group: publish-maven-packages
+  cancel-in-progress: false
+
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -21,6 +25,48 @@ jobs:
           distribution: temurin
           java-version: '25'
           cache: maven
+
+      - name: Refuse duplicate Maven releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(mvn --batch-mode --non-recursive help:evaluate \
+            -Dexpression=project.version -DforceStdout -q)"
+
+          if [[ "$version" == *-SNAPSHOT ]]; then
+            echo "Snapshot version $version may be republished."
+            exit 0
+          fi
+
+          packages=(
+            org.yzh.jtt808-parent
+            org.yzh.commons
+            org.yzh.jtt808-protocol
+          )
+
+          conflicts=()
+          for package in "${packages[@]}"; do
+            endpoint="/users/${GITHUB_REPOSITORY_OWNER}/packages/maven/${package}/versions"
+            error_file="$(mktemp)"
+
+            if versions="$(gh api --paginate "$endpoint" --jq '.[].name' 2>"$error_file")"; then
+              if grep -Fxq "$version" <<< "$versions"; then
+                conflicts+=("$package:$version")
+              fi
+            elif grep -Fq "HTTP 404" "$error_file"; then
+              echo "Package $package does not exist yet."
+            else
+              echo "::error::Unable to inspect GitHub package $package."
+              sed 's/^/::error::/' "$error_file"
+              exit 1
+            fi
+          done
+
+          if (( ${#conflicts[@]} > 0 )); then
+            echo "::error::Release version already exists: ${conflicts[*]}"
+            echo "::error::Bump the Maven version before publishing again."
+            exit 1
+          fi
 
       - name: Publish Maven packages
         run: mvn --batch-mode deploy
