@@ -20,6 +20,10 @@ persistent-message default.
 - Unidentified, duplicate, and superseded-session callbacks emit nothing.
 - Registration, heartbeat updates, publication, and destruction serialize per
   SIM. An old connection cannot update the replacement's heartbeat state.
+- Registration callbacks must match netmc's authoritative session registry
+  inside that per-SIM lock. A delayed callback cannot reclaim ownership from a
+  replacement connection or recreate state after registry removal. The registry
+  dependency is resolved lazily to avoid a Spring bean construction cycle.
 - Destruction removes heartbeat state even if RabbitMQ publication fails.
   Failure is logged. There is no durable gateway outbox; backend heartbeat
   monitoring remains the fallback for broker failures or gateway crashes.
@@ -44,5 +48,8 @@ The explicit `maven.test.skip=false` overrides this repository's default.
 Backend migration, deployment order, and broker/database checks are documented
 in VTMS `docs/DEVICE-DISCONNECT-ROLLOUT.md`.
 
-Verified 2026-10-12: 9 targeted gateway tests passed, including lifecycle
-replacement, failure cleanup, and concurrent publication.
+Verified 2026-10-12: 12 targeted gateway tests passed, including reordered
+registration callbacks against the real netmc session manager, late callbacks
+after registry removal, Spring context startup, lifecycle replacement, failure
+cleanup, and concurrent publication. Both callback regressions failed before
+the authoritative registry check and passed after it.

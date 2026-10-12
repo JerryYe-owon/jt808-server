@@ -1,7 +1,9 @@
 package org.yzh.web.service;
 
 import io.github.yezhihao.netmc.session.Session;
+import io.github.yezhihao.netmc.session.SessionManager;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,6 +16,12 @@ public class DeviceSessionManager
 {
 
     private final ConcurrentMap<String, State> sessions = new ConcurrentHashMap<>();
+    private final ObjectProvider<SessionManager> sessionManagerProvider;
+
+    public DeviceSessionManager(ObjectProvider<SessionManager> sessionManagerProvider)
+    {
+        this.sessionManagerProvider = sessionManagerProvider;
+    }
 
     private static final class State
     {
@@ -30,8 +38,12 @@ public class DeviceSessionManager
     {
         String sim = session.getClientId();
         if (sim == null || sim.isBlank()) return;
-        sessions.compute(sim, (key, state) ->
-            state != null && state.session == session ? state : new State(session));
+        sessions.compute(sim, (key, state) -> {
+            // netmc updates its registry before invoking callbacks; older callbacks can arrive last.
+            if (sessionManagerProvider.getObject().get(session.getId()) != session)
+                return state;
+            return state != null && state.session == session ? state : new State(session);
+        });
     }
 
     public void updateHeartbeat(Session session)
