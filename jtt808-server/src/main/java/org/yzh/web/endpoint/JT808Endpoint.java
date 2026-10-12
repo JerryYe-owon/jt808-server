@@ -47,7 +47,7 @@ public class JT808Endpoint {
 
     @Mapping(types = 终端心跳, desc = "终端心跳")
     public void T0002(JTMessage message, Session session) {
-        deviceSessionManager.updateHeartbeat(message.getClientId());
+        deviceSessionManager.updateHeartbeat(session);
     }
 
     @Mapping(types = 终端注销, desc = "终端注销")

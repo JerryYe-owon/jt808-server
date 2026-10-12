@@ -5,8 +5,12 @@ import io.github.yezhihao.netmc.session.Session;
 import io.github.yezhihao.netmc.session.SessionListener;
 import org.springframework.stereotype.Component;
 import org.yzh.protocol.basics.JTMessage;
+import org.yzh.web.config.RabbitMQConfig;
+import org.yzh.web.model.dto.DisconnectMessage;
 import org.yzh.web.model.entity.DeviceDO;
 import org.yzh.web.model.enums.SessionKey;
+import org.yzh.web.service.DeviceSessionManager;
+import org.yzh.web.service.MessageProducer;
 
 import java.util.function.BiConsumer;
 
@@ -16,6 +20,14 @@ import java.util.function.BiConsumer;
  */
 @Component
 public class JTSessionListener implements SessionListener {
+
+    private final DeviceSessionManager deviceSessionManager;
+    private final MessageProducer messageProducer;
+
+    public JTSessionListener(DeviceSessionManager deviceSessionManager, MessageProducer messageProducer) {
+        this.deviceSessionManager = deviceSessionManager;
+        this.messageProducer = messageProducer;
+    }
 
     /**
      * 下行消息拦截器
@@ -52,6 +64,7 @@ public class JTSessionListener implements SessionListener {
      */
     @Override
     public void sessionRegistered(Session session) {
+        deviceSessionManager.register(session);
     }
 
     /**
@@ -59,5 +72,8 @@ public class JTSessionListener implements SessionListener {
      */
     @Override
     public void sessionDestroyed(Session session) {
+        deviceSessionManager.disconnect(session, () -> messageProducer.sendRegistryEvent(
+                RabbitMQConfig.DEVICE_DISCONNECT_EVENT,
+                new DisconnectMessage(session.getClientId(), System.currentTimeMillis())));
     }
 }

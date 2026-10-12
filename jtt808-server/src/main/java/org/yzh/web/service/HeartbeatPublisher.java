@@ -34,9 +34,8 @@ public class HeartbeatPublisher
     @Scheduled(fixedDelay = 30_000) // every 30 seconds
     public void publishHeartbeat()
     {
-        long now = System.currentTimeMillis();
-
-        sessionManager.getHeartbeatMap().forEach((deviceId, lastTime) -> {
+        sessionManager.forEachHeartbeat((deviceId, lastTime) -> {
+            long now = System.currentTimeMillis();
             boolean online = (now - lastTime) <= TIMEOUT_MS;
             HeartbeatMessage message = new HeartbeatMessage(deviceId, online, lastTime, now);
             rabbitTemplate.convertAndSend(REGISTRY_EXCHANGE, HEARTBEAT_EVENT, message, messagePostProcessor);
@@ -48,14 +47,6 @@ public class HeartbeatPublisher
     public void cleanExpiredDevices()
     {
         long now = System.currentTimeMillis();
-        sessionManager.getHeartbeatMap().entrySet().removeIf(entry -> {
-            long lastTime = entry.getValue();
-            boolean expired = (now - lastTime) > (TIMEOUT_MS * 3); // 3x timeout
-            if (expired)
-            {
-                log.info("Removing expired device {}", entry.getKey());
-            }
-            return expired;
-        });
+        sessionManager.clearExpiredHeartbeats(now, TIMEOUT_MS * 3);
     }
 }
