@@ -1,5 +1,6 @@
 package org.yzh.web.service;
 
+import io.github.yezhihao.netmc.session.Session;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -36,11 +37,21 @@ public class HeartbeatPublisher
     {
         sessionManager.forEachHeartbeat((deviceId, lastTime) -> {
             long now = System.currentTimeMillis();
-            boolean online = (now - lastTime) <= TIMEOUT_MS;
-            HeartbeatMessage message = new HeartbeatMessage(deviceId, online, lastTime, now);
-            rabbitTemplate.convertAndSend(REGISTRY_EXCHANGE, HEARTBEAT_EVENT, message, messagePostProcessor);
-//            log.info("Publish heartbeat, {}, {}", HEARTBEAT_EVENT, message);
+            publishStatus(deviceId, lastTime, now);
         });
+    }
+
+    public void receiveHeartbeat(Session session)
+    {
+        sessionManager.updateHeartbeat(session, TIMEOUT_MS,
+            (deviceId, receivedAt) -> publishStatus(deviceId, receivedAt, receivedAt));
+    }
+
+    private void publishStatus(String deviceId, long lastHeartbeatTime, long eventTime)
+    {
+        boolean online = eventTime - lastHeartbeatTime <= TIMEOUT_MS;
+        HeartbeatMessage message = new HeartbeatMessage(deviceId, online, lastHeartbeatTime, eventTime);
+        rabbitTemplate.convertAndSend(REGISTRY_EXCHANGE, HEARTBEAT_EVENT, message, messagePostProcessor);
     }
 
     @Scheduled(fixedDelay = 300_000) // every 5 minutes
