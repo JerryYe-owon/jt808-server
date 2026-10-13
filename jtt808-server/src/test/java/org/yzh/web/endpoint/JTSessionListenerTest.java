@@ -57,6 +57,12 @@ class JTSessionListenerTest
     {
         when(registry.get(session.getId())).thenReturn(session);
         listener.sessionRegistered(session);
+        manager.authenticate(session);
+    }
+
+    private void heartbeat(DeviceSessionManager tracker, Session session)
+    {
+        tracker.updateHeartbeat(session, 120_000, (sim, time) -> {});
     }
 
     @Test
@@ -64,7 +70,7 @@ class JTSessionListenerTest
     {
         Session session = session("001234567890");
         register(session);
-        manager.updateHeartbeat(session);
+        heartbeat(manager, session);
         long before = System.currentTimeMillis();
         listener.sessionDestroyed(session);
         listener.sessionDestroyed(session);
@@ -93,15 +99,15 @@ class JTSessionListenerTest
         Session old = session("001234567890");
         Session replacement = session("001234567890");
         register(old);
-        manager.updateHeartbeat(old);
+        heartbeat(manager, old);
         register(replacement);
-        manager.updateHeartbeat(old);
+        heartbeat(manager, old);
         listener.sessionDestroyed(old);
         List<Long> heartbeats = new ArrayList<>();
         manager.forEachHeartbeat((sim, time) -> heartbeats.add(time));
         assertTrue(heartbeats.isEmpty());
         verifyNoInteractions(producer);
-        manager.updateHeartbeat(replacement);
+        heartbeat(manager, replacement);
         manager.forEachHeartbeat((sim, time) -> heartbeats.add(time));
         assertEquals(1, heartbeats.size());
         listener.sessionDestroyed(replacement);
@@ -113,7 +119,7 @@ class JTSessionListenerTest
     {
         Session session = session("001234567890");
         register(session);
-        manager.updateHeartbeat(session);
+        heartbeat(manager, session);
         register(session);
         List<Long> heartbeats = new ArrayList<>();
         manager.forEachHeartbeat((sim, time) -> heartbeats.add(time));
@@ -125,10 +131,10 @@ class JTSessionListenerTest
     {
         Session session = session("001234567890");
         register(session);
-        manager.updateHeartbeat(session);
+        heartbeat(manager, session);
         manager.clearExpiredHeartbeats(Long.MAX_VALUE, 360_000);
         manager.forEachHeartbeat((sim, time) -> fail("Expired heartbeat published"));
-        manager.updateHeartbeat(session);
+        heartbeat(manager, session);
         List<Long> heartbeats = new ArrayList<>();
         manager.forEachHeartbeat((sim, time) -> heartbeats.add(time));
         assertEquals(1, heartbeats.size());
@@ -142,7 +148,7 @@ class JTSessionListenerTest
     {
         Session session = session("001234567890");
         register(session);
-        manager.updateHeartbeat(session);
+        heartbeat(manager, session);
         doThrow(new RuntimeException("Broker unavailable")).when(producer)
             .sendRegistryEvent(eq(DEVICE_DISCONNECT_EVENT), any());
         assertDoesNotThrow(() -> listener.sessionDestroyed(session));
@@ -156,7 +162,7 @@ class JTSessionListenerTest
     {
         Session session = session("001234567890");
         register(session);
-        manager.updateHeartbeat(session);
+        heartbeat(manager, session);
         CountDownLatch entered = new CountDownLatch(1);
         CountDownLatch release = new CountDownLatch(1);
         List<String> order = Collections.synchronizedList(new ArrayList<>());
@@ -191,8 +197,50 @@ class JTSessionListenerTest
     void logoutInvalidatesSession()
     {
         Session session = session("001234567890");
-        new JT808Endpoint(null, producer, manager).T0003(null, session);
+        new JT808Endpoint(null, producer, manager, null).T0003(null, session);
         verify(session).invalidate();
+    }
+
+    @Test
+    void disconnectWaitsForFirstOnlineHeartbeatAndThenStopsPublication() throws Exception
+    {
+        Session session = session("001234567890");
+        register(session);
+        RabbitTemplate rabbit = mock(RabbitTemplate.class);
+        HeartbeatPublisher publisher = new HeartbeatPublisher(manager, rabbit);
+        CountDownLatch entered = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        List<String> order = Collections.synchronizedList(new ArrayList<>());
+        doAnswer(invocation -> {
+            entered.countDown();
+            assertTrue(release.await(5, TimeUnit.SECONDS));
+            order.add("online");
+            return null;
+        }).when(rabbit).convertAndSend(eq(REGISTRY_EXCHANGE), eq(HEARTBEAT_EVENT),
+            any(HeartbeatMessage.class), any(MessagePostProcessor.class));
+        doAnswer(invocation -> { order.add("disconnect"); return null; }).when(producer)
+            .sendRegistryEvent(eq(DEVICE_DISCONNECT_EVENT), any());
+        try (var executor = Executors.newFixedThreadPool(2))
+        {
+            var heartbeat = executor.submit(() -> publisher.receiveHeartbeat(session));
+            try
+            {
+                assertTrue(entered.await(5, TimeUnit.SECONDS));
+                var disconnect = executor.submit(() -> listener.sessionDestroyed(session));
+                release.countDown();
+                heartbeat.get(5, TimeUnit.SECONDS);
+                disconnect.get(5, TimeUnit.SECONDS);
+            }
+            finally
+            {
+                release.countDown();
+            }
+        }
+        assertEquals(List.of("online", "disconnect"), order);
+        publisher.receiveHeartbeat(session);
+        publisher.publishHeartbeat();
+        verify(rabbit).convertAndSend(eq(REGISTRY_EXCHANGE), eq(HEARTBEAT_EVENT),
+            any(HeartbeatMessage.class), any(MessagePostProcessor.class));
     }
 
     @Test
@@ -250,9 +298,11 @@ class JTSessionListenerTest
             pending.get(5, TimeUnit.SECONDS);
         }
         assertSame(replacement, authoritative.get(replacement.getId()));
-        tracker.updateHeartbeat(old);
+        tracker.authenticate(old);
+        heartbeat(tracker, old);
         tracker.forEachHeartbeat((sim, time) -> fail("Superseded session heartbeat was accepted"));
-        tracker.updateHeartbeat(replacement);
+        tracker.authenticate(replacement);
+        heartbeat(tracker, replacement);
         RabbitTemplate rabbit = mock(RabbitTemplate.class);
         HeartbeatPublisher publisher = new HeartbeatPublisher(tracker, rabbit);
         publisher.publishHeartbeat();
@@ -277,7 +327,7 @@ class JTSessionListenerTest
         listener.sessionDestroyed(session);
         when(registry.get(session.getId())).thenReturn(null);
         listener.sessionRegistered(session);
-        manager.updateHeartbeat(session);
+        heartbeat(manager, session);
         manager.forEachHeartbeat((sim, time) -> fail("Removed session was recreated by delayed callback"));
         listener.sessionDestroyed(session);
         verify(producer, times(1)).sendRegistryEvent(eq(DEVICE_DISCONNECT_EVENT), any(DisconnectMessage.class));
@@ -297,7 +347,8 @@ class JTSessionListenerTest
             Session session = session("001234567890");
             authoritative.addSession(session);
             DeviceSessionManager tracker = context.getBean(DeviceSessionManager.class);
-            tracker.updateHeartbeat(session);
+            tracker.authenticate(session);
+            heartbeat(tracker, session);
             List<Long> heartbeats = new ArrayList<>();
             tracker.forEachHeartbeat((sim, time) -> heartbeats.add(time));
             assertEquals(1, heartbeats.size());

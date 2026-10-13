@@ -1,4 +1,4 @@
-# Device disconnect events
+# Device online and disconnect events
 
 Registered JT808 session destruction publishes JSON to `device.registry.exchange`
 with routing key `device.disconnect`. The existing binding delivers it to
@@ -29,8 +29,37 @@ persistent-message default.
   monitoring remains the fallback for broker failures or gateway crashes.
 - Silent network loss waits for the configured idle timeout, currently 180
   seconds. A detected close does not wait for the heartbeat timeout.
-- Reconnection becomes online through the existing heartbeat flow. Registration
-  and authentication behavior remains unchanged.
+- Registration and successful authentication do not publish online status.
+  The current session must authenticate before its heartbeats are tracked.
+- The first actual terminal heartbeat after authentication publishes online
+  status immediately. Activity resuming after the 120-second heartbeat timeout
+  also publishes online immediately; later heartbeats use the existing
+  30-second status publisher.
+- Repeated registration/authentication on the same session preserves activity.
+  Replacement sessions start unauthenticated and require their own heartbeat.
+  Authoritative ownership is checked for authentication, heartbeat receipt,
+  and scheduled publication, including when a replacement callback is delayed.
+- Initial online publication shares the per-SIM lock with disconnect. Broker
+  failures are logged and retain actual heartbeat activity for scheduled retry.
+
+## Online heartbeat contract
+
+Online status uses `device.registry.exchange` and routing key `device.heartbeat`,
+with the existing JSON schema and 120-second message TTL:
+
+```json
+{"deviceId":"001234567890","online":true,"lastHeartbeatTime":1791763200000,"timestamp":1791763200000}
+```
+
+For an immediate publication, both timestamps are the actual gateway receipt
+time of the terminal heartbeat. Scheduled messages retain that activity time
+and use the current publication time for `timestamp`. Authentication never
+fabricates a heartbeat. No terminal heartbeat means no online publication.
+
+Backend heartbeat consumption only updates existing device records. If it races
+asynchronous backend registration, the initial message is ignored; the periodic
+publisher retries while activity remains fresh. The existing frontend manual
+refresh reads the resulting database status. No frontend polling is added.
 
 VTMS compares event timestamps atomically, so a queued older heartbeat cannot
 restore online status after disconnect. A newer heartbeat restores online after
@@ -41,7 +70,7 @@ reconnection; offline wins ties. Gateway and backend clocks must stay synchroniz
 From the gateway repository:
 
 ```powershell
-mvn -B -pl jtt808-server -am '-Dmaven.test.skip=false' '-Dtest=JTSessionListenerTest,GpsGmt8PublishingTest' '-Dsurefire.failIfNoSpecifiedTests=false' test
+mvn -B -pl jtt808-server -am '-Dmaven.test.skip=false' '-Dtest=JT808EndpointTest,JTSessionListenerTest,GpsGmt8PublishingTest' '-Dsurefire.failIfNoSpecifiedTests=false' test
 ```
 
 The explicit `maven.test.skip=false` overrides this repository's default.
@@ -53,3 +82,8 @@ registration callbacks against the real netmc session manager, late callbacks
 after registry removal, Spring context startup, lifecycle replacement, failure
 cleanup, and concurrent publication. Both callback regressions failed before
 the authoritative registry check and passed after it.
+
+Verified 2026-10-13: 19 targeted gateway tests passed. Coverage includes no
+online publication before auth/heartbeat, immediate first-heartbeat reporting,
+repeat auth, replacement ownership, timeout recovery, scheduled retry after
+broker failure, and serialization of initial online publication with disconnect.

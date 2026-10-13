@@ -26,6 +26,7 @@ public class DeviceSessionManager
     private static final class State
     {
         private final Session session;
+        private boolean authenticated;
         private Long lastHeartbeatTime;
 
         private State(Session session)
@@ -46,15 +47,45 @@ public class DeviceSessionManager
         });
     }
 
-    public void updateHeartbeat(Session session)
+    public void authenticate(Session session)
     {
         String sim = session.getClientId();
         if (sim == null || sim.isBlank()) return;
         sessions.computeIfPresent(sim, (key, state) -> {
-            if (state.session == session)
-                state.lastHeartbeatTime = System.currentTimeMillis();
+            if (isCurrent(state, session))
+                state.authenticated = true;
             return state;
         });
+    }
+
+    public void updateHeartbeat(Session session, long timeoutMs, BiConsumer<String, Long> publishOnline)
+    {
+        String sim = session.getClientId();
+        if (sim == null || sim.isBlank()) return;
+        sessions.computeIfPresent(sim, (key, state) -> {
+            if (!state.authenticated || !isCurrent(state, session)) return state;
+            long now = System.currentTimeMillis();
+            boolean becameOnline = state.lastHeartbeatTime == null || now - state.lastHeartbeatTime > timeoutMs;
+            state.lastHeartbeatTime = now;
+            if (becameOnline)
+            {
+                try
+                {
+                    publishOnline.accept(key, now);
+                }
+                catch (RuntimeException e)
+                {
+                    // Retain activity so scheduled publication can retry after a broker failure.
+                    log.error("Failed to publish online heartbeat for sim={}", sim, e);
+                }
+            }
+            return state;
+        });
+    }
+
+    private boolean isCurrent(State state, Session session)
+    {
+        return state.session == session && sessionManagerProvider.getObject().get(session.getId()) == session;
     }
 
     public void disconnect(Session session, Runnable publish)
@@ -80,7 +111,7 @@ public class DeviceSessionManager
     public void forEachHeartbeat(BiConsumer<String, Long> publish)
     {
         sessions.keySet().forEach(sim -> sessions.computeIfPresent(sim, (key, state) -> {
-            if (state.lastHeartbeatTime != null)
+            if (state.authenticated && state.lastHeartbeatTime != null && isCurrent(state, state.session))
                 publish.accept(key, state.lastHeartbeatTime);
             return state;
         }));

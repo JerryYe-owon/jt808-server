@@ -28,7 +28,7 @@ class GpsGmt8PublishingTest {
             for (String zone : List.of("UTC", "Asia/Hong_Kong", "America/New_York")) {
                 TimeZone.setDefault(TimeZone.getTimeZone(zone));
                 MessageProducer producer = mock(MessageProducer.class);
-                JT808Endpoint endpoint = new JT808Endpoint(mock(FileService.class), producer, mock(DeviceSessionManager.class));
+                JT808Endpoint endpoint = new JT808Endpoint(mock(FileService.class), producer, mock(DeviceSessionManager.class), null);
                 T0200 packet = new T0200();
                 packet.setClientId("123456789012");
                 packet.setDeviceTime(LocalDateTime.parse("2026-09-10T09:30:00"));

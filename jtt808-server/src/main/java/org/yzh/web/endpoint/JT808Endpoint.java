@@ -19,6 +19,7 @@ import org.yzh.web.model.entity.DeviceDO;
 import org.yzh.web.model.enums.SessionKey;
 import org.yzh.web.service.DeviceSessionManager;
 import org.yzh.web.service.FileService;
+import org.yzh.web.service.HeartbeatPublisher;
 import org.yzh.web.service.MessageProducer;
 
 import java.time.LocalDateTime;
@@ -39,6 +40,8 @@ public class JT808Endpoint {
 
     private final DeviceSessionManager deviceSessionManager;
 
+    private final HeartbeatPublisher heartbeatPublisher;
+
     @Mapping(types = 终端通用应答, desc = "终端通用应答")
     public Object T0001(T0001 message, Session session) {
         session.response(message);
@@ -47,7 +50,7 @@ public class JT808Endpoint {
 
     @Mapping(types = 终端心跳, desc = "终端心跳")
     public void T0002(JTMessage message, Session session) {
-        deviceSessionManager.updateHeartbeat(session);
+        heartbeatPublisher.receiveHeartbeat(session);
     }
 
     @Mapping(types = 终端注销, desc = "终端注销")
@@ -117,6 +120,7 @@ public class JT808Endpoint {
         result.setResponseSerialNo(message.getSerialNo());
         result.setResponseMessageId(message.getMessageId());
         result.setResultCode(T0001.Success);
+        deviceSessionManager.authenticate(session);
         return result;
     }
 
