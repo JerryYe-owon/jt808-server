@@ -13,6 +13,7 @@ import org.yzh.protocol.commons.JT808;
 import org.yzh.protocol.t808.*;
 import org.yzh.web.config.RabbitMQConfig;
 import org.yzh.web.model.dto.AuthMessage;
+import org.yzh.web.model.dto.CanUploadMessage;
 import org.yzh.web.model.dto.GPSMessage;
 import org.yzh.web.model.dto.RegistryMessage;
 import org.yzh.web.model.entity.DeviceDO;
@@ -210,6 +211,7 @@ public class JT808Endpoint {
 
     @Mapping(types = CAN总线数据上传, desc = "CAN总线数据上传")
     public void T0705(T0705 message, Session session) {
+        messageProducer.sendMessage(RabbitMQConfig.CONTROL_EXCHANGE, message.getClientId(), "can", CanUploadMessage.from(message));
     }
 
     @Mapping(types = 多媒体事件信息上传, desc = "多媒体事件信息上传")
