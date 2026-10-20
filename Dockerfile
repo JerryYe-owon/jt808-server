@@ -1,5 +1,7 @@
 FROM maven:3.9.16-eclipse-temurin-25-alpine AS jar-builder
 
+ARG LOCAL_MAVEN_REPO=false
+
 # Set working directory
 WORKDIR /app
 
@@ -17,7 +19,24 @@ COPY jtt808-protocol/src ./jtt808-protocol/src
 COPY jtt808-server/src ./jtt808-server/src
 
 # Build the application
-RUN --mount=type=cache,target=/root/.m2 mvn -B -e clean package -P stage -D maven.test.skip=true
+RUN --mount=type=cache,target=/root/.m2/repository \
+    --mount=type=secret,id=maven_settings,target=/root/.m2/settings.xml \
+    set -eu; \
+    set --; \
+    if [ "$LOCAL_MAVEN_REPO" = true ] && [ ! -f /root/.m2/settings.xml ]; then \
+        printf '%s\n' \
+            '<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0">' \
+            '  <mirrors>' \
+            '    <mirror>' \
+            '      <id>aliyun</id>' \
+            '      <mirrorOf>central</mirrorOf>' \
+            '      <url>https://maven.aliyun.com/repository/central</url>' \
+            '    </mirror>' \
+            '  </mirrors>' \
+            '</settings>' > /tmp/local-maven-settings.xml; \
+        set -- -s /tmp/local-maven-settings.xml; \
+    fi; \
+    mvn "$@" -B -e clean package -P stage -D maven.test.skip=true
 
 FROM bellsoft/liberica-runtime-container:jdk-all-25-cds-musl AS jre-builder
 
