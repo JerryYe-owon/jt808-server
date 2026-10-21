@@ -20,6 +20,7 @@ public class RabbitMQConfig
 
     // --- Routing keys (topic pattern) ---
     public static final String GPS_ROUTING_KEY = "*.gps";                    // GPS updates
+    public static final String CAN_ROUTING_KEY = "*.can";                    // CAN uploads
 
     // --- Device Registry routing keys ---
     public static final String DEVICE_REGISTER_EVENT = "device.register";
@@ -144,5 +145,14 @@ public class RabbitMQConfig
                 .bind(controlBackendQueue)
                 .to(controlExchange)
                 .with(GPS_ROUTING_KEY);
+    }
+
+    @Bean
+    public Binding canBinding(Queue controlBackendQueue, TopicExchange controlExchange)
+    {
+        return BindingBuilder
+                .bind(controlBackendQueue)
+                .to(controlExchange)
+                .with(CAN_ROUTING_KEY);
     }
 }
